@@ -1,21 +1,21 @@
-class_name DotReportLimiter
+class_name GSReportLimiter
 extends RefCounted
 
-## Stops report floods: a wait between reports, a count per hour, and the same report sent twice. Every refusal is a DotResult with a reason that says how long to wait. Time is passed in as seconds so a test is repeatable.
+## Stops report floods: a wait between reports, a count per hour, and the same report sent twice. Every refusal is a GSResult with a reason that says how long to wait. Time is passed in as seconds so a test is repeatable.
 
-var config: DotReportConfig
+var config: GSReportConfig
 ## Reporters forgotten to stay inside `max_reporters`.
 var evicted: int = 0
 
 var _history: Dictionary = {}   # reporter -> Array of {"at": float, "key": String}
 
 
-func _init(p_config: DotReportConfig = null) -> void:
-	config = p_config if p_config != null else DotReportConfig.new()
+func _init(p_config: GSReportConfig = null) -> void:
+	config = p_config if p_config != null else GSReportConfig.new()
 
 
 ## Whether [param reporter] may send a report with this [param key] (target plus text) at [param now]. Does not record it.
-func check(reporter: String, key: String, now: float = -1.0) -> DotResult:
+func check(reporter: String, key: String, now: float = -1.0) -> GSResult:
 	var t := _now(now)
 	var sent: Array = _history.get(reporter, [])
 	var last_at := -INF
@@ -25,12 +25,12 @@ func check(reporter: String, key: String, now: float = -1.0) -> DotResult:
 		if t - float(e["at"]) < 3600.0:
 			in_hour += 1
 		if config.duplicate_seconds > 0 and e["key"] == key and t - float(e["at"]) < float(config.duplicate_seconds):
-			return DotResult.fail(DotError.CODE_CONFLICT, "that report was already sent %d seconds ago" % int(t - float(e["at"])))
+			return GSResult.fail(GSError.CODE_CONFLICT, "that report was already sent %d seconds ago" % int(t - float(e["at"])))
 	if config.cooldown_seconds > 0 and t - last_at < float(config.cooldown_seconds):
-		return DotResult.fail(DotError.CODE_RATE_LIMITED, "wait %d more seconds before another report" % ceili(float(config.cooldown_seconds) - (t - last_at)))
+		return GSResult.fail(GSError.CODE_RATE_LIMITED, "wait %d more seconds before another report" % ceili(float(config.cooldown_seconds) - (t - last_at)))
 	if config.max_per_hour > 0 and in_hour >= config.max_per_hour:
-		return DotResult.fail(DotError.CODE_RATE_LIMITED, "the limit is %d reports an hour" % config.max_per_hour)
-	return DotResult.success(true)
+		return GSResult.fail(GSError.CODE_RATE_LIMITED, "the limit is %d reports an hour" % config.max_per_hour)
+	return GSResult.success(true)
 
 
 ## Notes that a report went out.

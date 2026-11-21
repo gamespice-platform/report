@@ -1,5 +1,5 @@
-class_name DotReportConfig
-extends DotConfig
+class_name GSReportConfig
+extends GSConfig
 
 ## Every tunable of reporting. Layers, weakest first: these defaults, `cfg/addon/dot_report/*.yml`, the game's files, the operator's files, `DOT_REPORT_*` environment variables, then `--report-*` flags. A limit of 0 is unlimited; nothing here is a hidden cap.
 
@@ -49,20 +49,20 @@ func cli_prefix() -> String:
 	return "--report-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if endpoint != "" and not (endpoint.begins_with("https://") or endpoint.begins_with("http://localhost")):
-		return DotResult.fail(DotError.CODE_INVALID, "report endpoint '%s' must be https (or http on localhost)" % endpoint)
+		return GSResult.fail(GSError.CODE_INVALID, "report endpoint '%s' must be https (or http on localhost)" % endpoint)
 	if outbox_max < 0 or max_text < 0 or max_field < 0:
-		return DotResult.fail(DotError.CODE_INVALID, "report limits cannot be negative (0 is unlimited)")
+		return GSResult.fail(GSError.CODE_INVALID, "report limits cannot be negative (0 is unlimited)")
 	if kinds.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "report kinds is empty, so no report could ever be accepted")
-	return DotResult.success(self)
+		return GSResult.fail(GSError.CODE_INVALID, "report kinds is empty, so no report could ever be accepted")
+	return GSResult.success(self)
 
 
 ## Defaults, then `cfg/addon/dot_report/*.yml` and the game tier, then environment and command line.
-static func from_files() -> DotResult:
-	var cfg := DotReportConfig.new()
-	var files := DotAddonConfig.load_dir(ADDON)
+static func from_files() -> GSResult:
+	var cfg := GSReportConfig.new()
+	var files := GSAddonConfig.load_dir(ADDON)
 	if not files.ok:
 		return files
 	cfg.apply_dictionary(files.value as Dictionary, "yml")

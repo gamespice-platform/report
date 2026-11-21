@@ -1,4 +1,4 @@
-class_name DotReportEvidenceRing
+class_name GSReportEvidenceRing
 extends RefCounted
 
 ## The last log lines before a report, kept in a bounded ring so a bug report can say what just happened. It holds text and references only: a screenshot or replay clip is a path or id the game saved elsewhere, never bytes in this ring.

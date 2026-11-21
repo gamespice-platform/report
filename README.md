@@ -4,7 +4,7 @@ Godot 4.7+ addon for player reports and bug reports: a report form model, eviden
 
 A player who reports someone, or a bug, should have it land with enough context to act on and no way to flood the inbox. This addon checks the form, keeps the last log lines as evidence, holds references to a screenshot and a replay clip, rate-limits the reporter, and then hands the finished report to you. It does not send or judge anything itself.
 
-Passed reports wait in `report.outbox` (`DotReportOutbox`) until the game delivers them: `peek(n)`, send, then `ack(n)`. `to_array()` and `load_array()` let GameSpice Save keep the box across sessions, so an offline report is not lost. A full box (`outbox_max`, 0 is unlimited) refuses the new report with a quota error instead of dropping one.
+Passed reports wait in `report.outbox` (`GSReportOutbox`) until the game delivers them: `peek(n)`, send, then `ack(n)`. `to_array()` and `load_array()` let GameSpice Save keep the box across sessions, so an offline report is not lost. A full box (`outbox_max`, 0 is unlimited) refuses the new report with a quota error instead of dropping one.
 
 ## Install
 
@@ -14,8 +14,8 @@ Passed reports wait in `report.outbox` (`DotReportOutbox`) until the game delive
 ## Quick start
 
 ```gdscript
-var report := DotReport.new()
-report.config = DotReportConfig.from_files().value   # layered cfg, env and flags
+var report := GSReport.new()
+report.config = GSReportConfig.from_files().value   # layered cfg, env and flags
 add_child(report)
 
 # Keep evidence: have your log handler call this for every line.
@@ -33,11 +33,11 @@ report.submit({"reporter": my_id, "kind": "player", "target": other_id,
         "category": "cheating", "text": "Snapped onto me through the wall."})
 ```
 
-A report dictionary holds `id`, `reporter`, `kind`, `category`, `target`, `text` and an `evidence` block with `log`, `screenshot`, `replay` and `dropped`. `DotReportForm`, `DotReportEvidenceRing` and `DotReportLimiter` work on their own too.
+A report dictionary holds `id`, `reporter`, `kind`, `category`, `target`, `text` and an `evidence` block with `log`, `screenshot`, `replay` and `dropped`. `GSReportForm`, `GSReportEvidenceRing` and `GSReportLimiter` work on their own too.
 
 ## Settings
 
-Every number is a field on `DotReportConfig`. A value of 0 means unlimited or off; the inspector ranges are slider limits, not enforced caps.
+Every number is a field on `GSReportConfig`. A value of 0 means unlimited or off; the inspector ranges are slider limits, not enforced caps.
 
 | Setting | Default | What it does |
 | --- | --- | --- |

@@ -31,7 +31,7 @@ func _ready() -> void:
 
 
 func _config() -> void:
-	var c := DotReportConfig.new()
+	var c := GSReportConfig.new()
 	_check(c.validate().ok, "defaults validate")
 	c.endpoint = "http://example.com/r"
 	_check(not c.validate().ok, "a plain http endpoint is refused")
@@ -44,7 +44,7 @@ func _config() -> void:
 
 
 func _form() -> void:
-	var f := DotReportForm.new()
+	var f := GSReportForm.new()
 	var ok := f.build({"reporter": "a", "kind": "player", "target": "b", "category": "cheating", "text": "  aimbot  "})
 	_check(ok.ok and ok.value["text"] == "aimbot", "a player report builds and trims", str(ok.code()))
 	_check(f.build({"reporter": "a", "kind": "bug", "text": "it crashed"}).ok, "a bug report needs no target")
@@ -56,17 +56,17 @@ func _form() -> void:
 	var long := "x".repeat(2001)
 	var r := f.build({"reporter": "a", "kind": "bug", "text": long})
 	_check(not r.ok and r.error.message.contains("2000"), "text over the limit is refused with the limit, not cut")
-	var cfg := DotReportConfig.new()
+	var cfg := GSReportConfig.new()
 	cfg.max_text = 0
-	_check(DotReportForm.new(cfg).build({"reporter": "a", "kind": "bug", "text": long}).ok, "max_text 0 is unlimited")
+	_check(GSReportForm.new(cfg).build({"reporter": "a", "kind": "bug", "text": long}).ok, "max_text 0 is unlimited")
 	var ctl := f.build({"reporter": "a", "kind": "bug", "text": "a\u0001b\nc\u007f"})
 	_check(ctl.ok and ctl.value["text"] == "ab\nc", "control characters go, newlines stay in text", str(ctl.value if ctl.ok else ""))
-	_check(DotReportForm.clean("a\tb\nc") == "a b c", "tabs and newlines in a short field become spaces")
+	_check(GSReportForm.clean("a\tb\nc") == "a b c", "tabs and newlines in a short field become spaces")
 	_sections += 1
 
 
 func _ring() -> void:
-	var r := DotReportEvidenceRing.new(3)
+	var r := GSReportEvidenceRing.new(3)
 	for i in 5:
 		r.add("line %d" % i, float(i))
 	_check(r.size() == 3 and r.lines()[0] == "line 2" and r.lines()[2] == "line 4", "the ring keeps the newest lines")
@@ -78,7 +78,7 @@ func _ring() -> void:
 	_check((snap["log"] as PackedStringArray).size() == 3 and snap["dropped"] == 2, "the snapshot carries the log and the drop count")
 	r.clear()
 	_check(r.size() == 0 and r.snapshot()["screenshot"] == "", "clear empties it")
-	var u := DotReportEvidenceRing.new(0)
+	var u := GSReportEvidenceRing.new(0)
 	for i in 1000:
 		u.add("x", 0.0)
 	_check(u.size() == 1000 and u.dropped == 0, "capacity 0 is unlimited")
@@ -86,18 +86,18 @@ func _ring() -> void:
 
 
 func _limiter() -> void:
-	var cfg := DotReportConfig.new()
+	var cfg := GSReportConfig.new()
 	cfg.cooldown_seconds = 10
 	cfg.max_per_hour = 3
 	cfg.duplicate_seconds = 100
-	var l := DotReportLimiter.new(cfg)
+	var l := GSReportLimiter.new(cfg)
 	_check(l.check("a", "k1", 0.0).ok, "the first report passes")
 	l.record("a", "k1", 0.0)
 	var cool := l.check("a", "k2", 5.0)
-	_check(not cool.ok and cool.error.code == DotError.CODE_RATE_LIMITED and cool.error.message.contains("5"), "inside the cooldown it says how long to wait")
+	_check(not cool.ok and cool.error.code == GSError.CODE_RATE_LIMITED and cool.error.message.contains("5"), "inside the cooldown it says how long to wait")
 	_check(l.check("a", "k2", 10.0).ok, "after the cooldown it passes")
 	var dup := l.check("a", "k1", 20.0)
-	_check(not dup.ok and dup.error.code == DotError.CODE_CONFLICT, "the same report again is a duplicate")
+	_check(not dup.ok and dup.error.code == GSError.CODE_CONFLICT, "the same report again is a duplicate")
 	_check(l.check("a", "k1", 200.0).ok, "a duplicate is allowed once its window passes")
 	l.record("a", "k2", 10.0)
 	l.record("a", "k3", 30.0)
@@ -105,17 +105,17 @@ func _limiter() -> void:
 	_check(not hour.ok and hour.error.message.contains("3 reports"), "the hourly count is enforced")
 	_check(l.check("a", "k4", 3700.0).ok, "and the hour slides")
 	_check(l.check("b", "k1", 0.0).ok, "another reporter has their own limits")
-	var open := DotReportConfig.new()
+	var open := GSReportConfig.new()
 	open.cooldown_seconds = 0
 	open.max_per_hour = 0
 	open.duplicate_seconds = 0
-	var o := DotReportLimiter.new(open)
+	var o := GSReportLimiter.new(open)
 	for i in 50:
 		o.record("a", "same", 0.0)
 	_check(o.check("a", "same", 0.0).ok, "limits of 0 turn each check off")
-	var cap := DotReportConfig.new()
+	var cap := GSReportConfig.new()
 	cap.max_reporters = 2
-	var c := DotReportLimiter.new(cap)
+	var c := GSReportLimiter.new(cap)
 	c.record("x", "k", 0.0)
 	c.record("y", "k", 0.0)
 	c.record("z", "k", 0.0)
@@ -124,9 +124,9 @@ func _limiter() -> void:
 
 
 func _node() -> void:
-	var cfg := DotReportConfig.new()
+	var cfg := GSReportConfig.new()
 	cfg.include_replay = false
-	var n := DotReport.new()
+	var n := GSReport.new()
 	n.config = cfg
 	add_child(n)
 	n.submitted.connect(func(rep): _got.append(rep))
@@ -141,7 +141,7 @@ func _node() -> void:
 	_check((ev["log"] as PackedStringArray).size() == 2 and ev["screenshot"] == "shot.png", "it carries the evidence")
 	_check(ev["replay"] == "", "include_replay off leaves the replay reference out")
 	var again := n.submit({"reporter": "a", "kind": "bug", "text": "another one"}, 1.0)
-	_check(not again.ok and _refused.size() == 1 and _refused[0][1] == DotError.CODE_RATE_LIMITED, "a second report inside the cooldown is refused and signalled")
+	_check(not again.ok and _refused.size() == 1 and _refused[0][1] == GSError.CODE_RATE_LIMITED, "a second report inside the cooldown is refused and signalled")
 	_check(not n.submit({"reporter": "z", "kind": "player", "text": "x"}, 0.0).ok, "a bad form is refused and signalled")
 	_check(_refused.size() == 2 and n.count() == 1, "only accepted reports are counted")
 	cfg.enabled = false
@@ -150,35 +150,35 @@ func _node() -> void:
 
 
 func _layers() -> void:
-	var r := DotReportConfig.from_files()
-	_check(r.ok and (r.value as DotReportConfig).validate().ok, "the layered config loads and validates", str(r.code()))
-	_check(DotReportConfig.new().describe().contains("cooldown"), "describe names the cooldown")
+	var r := GSReportConfig.from_files()
+	_check(r.ok and (r.value as GSReportConfig).validate().ok, "the layered config loads and validates", str(r.code()))
+	_check(GSReportConfig.new().describe().contains("cooldown"), "describe names the cooldown")
 	_sections += 1
 
 
 func _outbox() -> void:
-	var o := DotReportOutbox.new(2)
+	var o := GSReportOutbox.new(2)
 	_check(o.push({"id": 1}).ok and o.push({"id": 2}).ok, "the box takes reports up to its capacity")
-	_check(o.push({"id": 3}).code() == DotError.CODE_QUOTA, "a full box refuses loudly")
+	_check(o.push({"id": 3}).code() == GSError.CODE_QUOTA, "a full box refuses loudly")
 	_check(o.peek(1).size() == 1 and o.size() == 2, "peek does not remove")
 	o.ack(1)
 	_check(o.size() == 1 and o.peek()[0]["id"] == 2, "ack removes the oldest delivered")
 	var saved := o.to_array()
-	var o2 := DotReportOutbox.new(0)
+	var o2 := GSReportOutbox.new(0)
 	_check(o2.load_array(saved + ["junk", {"nope": 1}]).value == 2 and o2.size() == 1, "load_array skips junk and counts it")
 	for i in 500:
 		o2.push({"id": i})
 	_check(o2.size() == 501, "capacity 0 is unlimited")
-	var cfg := DotReportConfig.new()
+	var cfg := GSReportConfig.new()
 	cfg.outbox_max = 1
 	cfg.cooldown_seconds = 0
 	cfg.duplicate_seconds = 0
-	var n := DotReport.new()
+	var n := GSReport.new()
 	n.config = cfg
 	n._ready()
 	var f := {"reporter": "a", "kind": "bug", "text": "x"}
 	_check(n.submit(f, 1.0).ok and n.outbox.size() == 1, "a passed report lands in the outbox")
-	_check(n.submit(f, 2.0).code() == DotError.CODE_QUOTA and n.count() == 1, "a full outbox refuses and does not use the rate limit")
+	_check(n.submit(f, 2.0).code() == GSError.CODE_QUOTA and n.count() == 1, "a full outbox refuses and does not use the rate limit")
 	n.outbox.ack(1)
 	_check(n.submit(f, 3.0).ok, "room again after delivery")
 	n.free()

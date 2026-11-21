@@ -1,4 +1,4 @@
-class_name DotReport
+class_name GSReport
 extends Node
 
 ## The report node: it feeds the evidence ring, checks and rate-limits a submitted report, and emits it. It does not send anything: connect [signal submitted] to GameSpice Moderation's intake or to your own client for the TMC backbone.
@@ -8,24 +8,24 @@ signal submitted(report: Dictionary)
 ## A report was refused. [param reason] is the message a player can be shown.
 signal rejected(reason: String, code: String)
 
-@export var config: DotReportConfig = null
+@export var config: GSReportConfig = null
 
-var form: DotReportForm
-var evidence: DotReportEvidenceRing
-var limiter: DotReportLimiter
+var form: GSReportForm
+var evidence: GSReportEvidenceRing
+var limiter: GSReportLimiter
 ## Reports passed but not yet delivered; the game drains it with peek/ack.
-var outbox: DotReportOutbox
+var outbox: GSReportOutbox
 
 var _count: int = 0
 
 
 func _ready() -> void:
 	if config == null:
-		config = DotReportConfig.new()
-	form = DotReportForm.new(config)
-	evidence = DotReportEvidenceRing.new(config.evidence_lines)
-	limiter = DotReportLimiter.new(config)
-	outbox = DotReportOutbox.new(config.outbox_max)
+		config = GSReportConfig.new()
+	form = GSReportForm.new(config)
+	evidence = GSReportEvidenceRing.new(config.evidence_lines)
+	limiter = GSReportLimiter.new(config)
+	outbox = GSReportOutbox.new(config.outbox_max)
 
 
 ## Adds a line to the evidence ring; the game's log handler calls this.
@@ -35,8 +35,8 @@ func log_line(line: String) -> void:
 	evidence.add(line)
 
 
-## Checks, rate-limits and emits one report. Returns a DotResult whose value is the report dictionary.
-func submit(fields: Dictionary, now: float = -1.0) -> DotResult:
+## Checks, rate-limits and emits one report. Returns a GSResult whose value is the report dictionary.
+func submit(fields: Dictionary, now: float = -1.0) -> GSResult:
 	if form == null:
 		_ready()
 	var r := _submit(fields, now)
@@ -51,9 +51,9 @@ func count() -> int:
 	return _count
 
 
-func _submit(fields: Dictionary, now: float) -> DotResult:
+func _submit(fields: Dictionary, now: float) -> GSResult:
 	if not config.enabled:
-		return DotResult.fail(DotError.CODE_STATE, "reporting is switched off")
+		return GSResult.fail(GSError.CODE_STATE, "reporting is switched off")
 	var built := form.build(fields)
 	if not built.ok:
 		return built
@@ -63,7 +63,7 @@ func _submit(fields: Dictionary, now: float) -> DotResult:
 	if not allowed.ok:
 		return allowed
 	if config.outbox_max > 0 and outbox.size() >= config.outbox_max:
-		return DotResult.fail(DotError.CODE_QUOTA, "report outbox is full (%d); reports are waiting to be delivered" % config.outbox_max)
+		return GSResult.fail(GSError.CODE_QUOTA, "report outbox is full (%d); reports are waiting to be delivered" % config.outbox_max)
 	limiter.record(f["reporter"], key, now)
 	_count += 1
 	var report: Dictionary = f.duplicate()
@@ -74,4 +74,4 @@ func _submit(fields: Dictionary, now: float) -> DotResult:
 	if not config.include_replay:
 		report["evidence"]["replay"] = ""
 	outbox.push(report)
-	return DotResult.success(report)
+	return GSResult.success(report)

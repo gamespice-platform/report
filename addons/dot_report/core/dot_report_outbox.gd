@@ -1,4 +1,4 @@
-class_name DotReportOutbox
+class_name GSReportOutbox
 extends RefCounted
 
 ## Reports that passed the checks and have not been delivered yet. A player who reports while offline loses nothing: the game takes a batch, tries to send it, and acknowledges what arrived. The whole box is an Array of Dictionaries, so GameSpice Save (or any file) can keep it between sessions with [method to_array] and [method load_array]. Refusing when full is deliberate: a silent drop would lose a report the player thinks was sent.
@@ -9,8 +9,8 @@ var capacity: int = 100:
 		capacity = maxi(0, value)
 		_items.capacity = capacity
 
-# The storage is the shared DotBoundedBuffer, set to refuse rather than drop: see the class comment.
-var _items := DotBoundedBuffer.new(0, DotBoundedBuffer.Policy.REFUSE)
+# The storage is the shared GSBoundedBuffer, set to refuse rather than drop: see the class comment.
+var _items := GSBoundedBuffer.new(0, GSBoundedBuffer.Policy.REFUSE)
 
 
 func _init(p_capacity: int = 100) -> void:
@@ -22,10 +22,10 @@ func size() -> int:
 
 
 ## Adds [param report]. Fails with a quota error when the box is full.
-func push(report: Dictionary) -> DotResult:
+func push(report: Dictionary) -> GSResult:
 	if not _items.push(report):
-		return DotResult.fail(DotError.CODE_QUOTA, "report outbox is full (%d); deliver or clear some first" % capacity)
-	return DotResult.success(_items.size())
+		return GSResult.fail(GSError.CODE_QUOTA, "report outbox is full (%d); deliver or clear some first" % capacity)
+	return GSResult.success(_items.size())
 
 
 ## Up to [param count] oldest reports (0 takes all), not removed until [method ack].
@@ -48,7 +48,7 @@ func to_array() -> Array:
 
 
 ## Replaces the contents with [param data]; entries that are not Dictionaries with an id are skipped and counted in the value. A box over capacity keeps everything it was given (it is a restore, not a new report) and only refuses new pushes.
-func load_array(data: Array) -> DotResult:
+func load_array(data: Array) -> GSResult:
 	var kept: Array = []
 	var skipped := 0
 	for e in data:
@@ -59,4 +59,4 @@ func load_array(data: Array) -> DotResult:
 	_items.capacity = 0
 	_items.load_array(kept)
 	_items.capacity = capacity
-	return DotResult.success(skipped)
+	return GSResult.success(skipped)
