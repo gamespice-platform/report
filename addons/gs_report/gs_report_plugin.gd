@@ -5,7 +5,7 @@ extends EditorPlugin
 
 
 func _enter_tree() -> void:
-	add_custom_type("GSReport", "Node", load("res://addons/dot_report/runtime/dot_report.gd"), null)
+	add_custom_type("GSReport", "Node", load("res://addons/gs_report/runtime/gs_report.gd"), null)
 
 
 func _exit_tree() -> void:

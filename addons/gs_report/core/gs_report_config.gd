@@ -1,9 +1,9 @@
 class_name GSReportConfig
 extends GSConfig
 
-## Every tunable of reporting. Layers, weakest first: these defaults, `cfg/addon/dot_report/*.yml`, the game's files, the operator's files, `DOT_REPORT_*` environment variables, then `--report-*` flags. A limit of 0 is unlimited; nothing here is a hidden cap.
+## Every tunable of reporting. Layers, weakest first: these defaults, `cfg/addon/gs_report/*.yml`, the game's files, the operator's files, `GS_REPORT_*` environment variables, then `--report-*` flags. A limit of 0 is unlimited; nothing here is a hidden cap.
 
-const ADDON := "dot-report"
+const ADDON := "gs-report"
 
 ## Master switch. Off, every submit is refused with a reason.
 @export var enabled: bool = true
@@ -42,7 +42,7 @@ const ADDON := "dot-report"
 
 
 func env_prefix() -> String:
-	return "DOT_REPORT_"
+	return "GS_REPORT_"
 
 
 func cli_prefix() -> String:
@@ -59,7 +59,7 @@ func validate() -> GSResult:
 	return GSResult.success(self)
 
 
-## Defaults, then `cfg/addon/dot_report/*.yml` and the game tier, then environment and command line.
+## Defaults, then `cfg/addon/gs_report/*.yml` and the game tier, then environment and command line.
 static func from_files() -> GSResult:
 	var cfg := GSReportConfig.new()
 	var files := GSAddonConfig.load_dir(ADDON)

@@ -8,7 +8,7 @@ Passed reports wait in `report.outbox` (`GSReportOutbox`) until the game deliver
 
 ## Install
 
-1. Copy `addons/dot_report/` and `addons/dot_core/` into your project.
+1. Copy `addons/gs_report/` and `addons/gs_core/` into your project.
 2. Enable GameSpice Report in *Project > Project Settings > Plugins*.
 
 ## Quick start
@@ -54,7 +54,7 @@ Every number is a field on `GSReportConfig`. A value of 0 means unlimited or off
 | `include_screenshot` | true | Carry the screenshot reference on a report. |
 | `include_replay` | true | Carry the replay reference on a report. |
 
-Layers, weakest first: the defaults, `cfg/addon/dot_report/*.yml`, the game's files, the operator's files, `DOT_REPORT_*` environment variables, then `--report-*` flags.
+Layers, weakest first: the defaults, `cfg/addon/gs_report/*.yml`, the game's files, the operator's files, `GS_REPORT_*` environment variables, then `--report-*` flags.
 
 ## What it is not
 

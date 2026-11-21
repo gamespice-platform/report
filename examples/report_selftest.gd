@@ -1,6 +1,6 @@
 extends Node
 
-## dot-report's headless suite (res://examples/report_selftest.tscn).
+## gs-report's headless suite (res://examples/report_selftest.tscn).
 ## Counts sections run to their last line as well as checks, because a script error
 ## aborts a section and not the run.
 
@@ -15,7 +15,7 @@ var _refused: Array = []
 
 
 func _ready() -> void:
-	print("dot-report")
+	print("gs-report")
 	_config()
 	_form()
 	_ring()
