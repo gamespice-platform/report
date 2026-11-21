@@ -13,6 +13,8 @@ signal rejected(reason: String, code: String)
 var form: DotReportForm
 var evidence: DotReportEvidenceRing
 var limiter: DotReportLimiter
+## Reports passed but not yet delivered; the game drains it with peek/ack.
+var outbox: DotReportOutbox
 
 var _count: int = 0
 
@@ -23,6 +25,7 @@ func _ready() -> void:
 	form = DotReportForm.new(config)
 	evidence = DotReportEvidenceRing.new(config.evidence_lines)
 	limiter = DotReportLimiter.new(config)
+	outbox = DotReportOutbox.new(config.outbox_max)
 
 
 ## Adds a line to the evidence ring; the game's log handler calls this.
@@ -59,6 +62,8 @@ func _submit(fields: Dictionary, now: float) -> DotResult:
 	var allowed := limiter.check(f["reporter"], key, now)
 	if not allowed.ok:
 		return allowed
+	if config.outbox_max > 0 and outbox.size() >= config.outbox_max:
+		return DotResult.fail(DotError.CODE_QUOTA, "report outbox is full (%d); reports are waiting to be delivered" % config.outbox_max)
 	limiter.record(f["reporter"], key, now)
 	_count += 1
 	var report: Dictionary = f.duplicate()
@@ -68,4 +73,5 @@ func _submit(fields: Dictionary, now: float) -> DotResult:
 		report["evidence"]["screenshot"] = ""
 	if not config.include_replay:
 		report["evidence"]["replay"] = ""
+	outbox.push(report)
 	return DotResult.success(report)

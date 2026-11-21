@@ -28,6 +28,10 @@ const ADDON := "dot-report"
 ## Reporters remembered by the limiter; 0 is unlimited. At the limit the oldest is forgotten and counted.
 @export_range(0, 1000000, 1) var max_reporters: int = 0
 
+@export_group("Outbox")
+## Reports held until delivered; 0 is unlimited. When full a new report is refused with a quota error.
+@export_range(0, 100000, 1) var outbox_max: int = 100
+
 @export_group("Evidence")
 ## Log lines kept in the evidence ring; 0 is unlimited.
 @export_range(0, 1000000, 1) var evidence_lines: int = 200
@@ -48,6 +52,8 @@ func cli_prefix() -> String:
 func validate() -> DotResult:
 	if endpoint != "" and not (endpoint.begins_with("https://") or endpoint.begins_with("http://localhost")):
 		return DotResult.fail(DotError.CODE_INVALID, "report endpoint '%s' must be https (or http on localhost)" % endpoint)
+	if outbox_max < 0 or max_text < 0 or max_field < 0:
+		return DotResult.fail(DotError.CODE_INVALID, "report limits cannot be negative (0 is unlimited)")
 	if kinds.is_empty():
 		return DotResult.fail(DotError.CODE_INVALID, "report kinds is empty, so no report could ever be accepted")
 	return DotResult.success(self)

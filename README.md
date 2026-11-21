@@ -4,6 +4,8 @@ Godot 4.7+ addon for player reports and bug reports: a report form model, eviden
 
 A player who reports someone, or a bug, should have it land with enough context to act on and no way to flood the inbox. This addon checks the form, keeps the last log lines as evidence, holds references to a screenshot and a replay clip, rate-limits the reporter, and then hands the finished report to you. It does not send or judge anything itself.
 
+Passed reports wait in `report.outbox` (`DotReportOutbox`) until the game delivers them: `peek(n)`, send, then `ack(n)`. `to_array()` and `load_array()` let GameSpice Save keep the box across sessions, so an offline report is not lost. A full box (`outbox_max`, 0 is unlimited) refuses the new report with a quota error instead of dropping one.
+
 ## Install
 
 1. Copy `addons/dot_report/` and `addons/dot_core/` into your project.

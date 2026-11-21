@@ -4,8 +4,8 @@ extends Node
 ## Counts sections run to their last line as well as checks, because a script error
 ## aborts a section and not the run.
 
-const EXPECTED_SECTIONS := 6
-const EXPECTED_CHECKS := 42
+const EXPECTED_SECTIONS := 7
+const EXPECTED_CHECKS := 52
 
 var _passed := 0
 var _failed := 0
@@ -22,6 +22,7 @@ func _ready() -> void:
 	_limiter()
 	_node()
 	_layers()
+	_outbox()
 	print("")
 	_check(_sections == EXPECTED_SECTIONS, "every section ran to its last line (%d of %d)" % [_sections, EXPECTED_SECTIONS])
 	_check(_passed + _failed == EXPECTED_CHECKS, "and the suite ran all %d of its checks (%d)" % [EXPECTED_CHECKS, _passed + _failed])
@@ -152,6 +153,37 @@ func _layers() -> void:
 	var r := DotReportConfig.from_files()
 	_check(r.ok and (r.value as DotReportConfig).validate().ok, "the layered config loads and validates", str(r.code()))
 	_check(DotReportConfig.new().describe().contains("cooldown"), "describe names the cooldown")
+	_sections += 1
+
+
+func _outbox() -> void:
+	var o := DotReportOutbox.new(2)
+	_check(o.push({"id": 1}).ok and o.push({"id": 2}).ok, "the box takes reports up to its capacity")
+	_check(o.push({"id": 3}).code() == DotError.CODE_QUOTA, "a full box refuses loudly")
+	_check(o.peek(1).size() == 1 and o.size() == 2, "peek does not remove")
+	o.ack(1)
+	_check(o.size() == 1 and o.peek()[0]["id"] == 2, "ack removes the oldest delivered")
+	var saved := o.to_array()
+	var o2 := DotReportOutbox.new(0)
+	_check(o2.load_array(saved + ["junk", {"nope": 1}]).value == 2 and o2.size() == 1, "load_array skips junk and counts it")
+	for i in 500:
+		o2.push({"id": i})
+	_check(o2.size() == 501, "capacity 0 is unlimited")
+	var cfg := DotReportConfig.new()
+	cfg.outbox_max = 1
+	cfg.cooldown_seconds = 0
+	cfg.duplicate_seconds = 0
+	var n := DotReport.new()
+	n.config = cfg
+	n._ready()
+	var f := {"reporter": "a", "kind": "bug", "text": "x"}
+	_check(n.submit(f, 1.0).ok and n.outbox.size() == 1, "a passed report lands in the outbox")
+	_check(n.submit(f, 2.0).code() == DotError.CODE_QUOTA and n.count() == 1, "a full outbox refuses and does not use the rate limit")
+	n.outbox.ack(1)
+	_check(n.submit(f, 3.0).ok, "room again after delivery")
+	n.free()
+	cfg.outbox_max = -1
+	_check(not cfg.validate().ok, "a negative limit is refused")
 	_sections += 1
 
 

@@ -2,3 +2,4 @@
 # cooldown_seconds: 60
 # max_per_hour: 10
 # max_text: 2000
+# outbox_max: 100   # undelivered reports held; 0 is unlimited
