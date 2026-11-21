@@ -1,0 +1,4 @@
+# Shipped defaults are in DotReportConfig; a key here overrides one.
+# cooldown_seconds: 60
+# max_per_hour: 10
+# max_text: 2000
